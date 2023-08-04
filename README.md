@@ -1,11 +1,11 @@
-# vue3x
+# vue-shared-store
 
 The most easy way to define a shared store composition api for vue3.
 
 ## Install
 
 ```
-npm i vue3x
+npm i vue-shared-store
 ```
 
 ## Usage
@@ -13,7 +13,7 @@ npm i vue3x
 ```js
 // a.ts
 
-import { defineSharedStore } from 'vue3x';
+import { defineSharedStore } from 'vue-shared-store';
 import { computed } from 'vue';
 
 export const useMySharedState = defineSharedStore(

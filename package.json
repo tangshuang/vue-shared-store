@@ -1,7 +1,7 @@
 {
-  "name": "vue3x",
+  "name": "vue-shared-store",
   "version": "1.0.0",
-  "description": "The most easy way to define a shared store composition api for vue3.",
+  "description": "The most easy way to define a shared store composition api for vue.",
   "main": "index.js",
   "type": "module",
   "keywords": ["vue", "store"],

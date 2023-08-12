@@ -14,7 +14,7 @@ export function defineSharedStore(initialState, fn, options) {
 
     if (options?.plugins?.length) {
         options.plugins.forEach((plugin) => {
-            plugin(sharedState, useSharedState, reactiveState, initialState, options);
+            plugin(sharedState, reactiveState, initialState, options);
         });
     }
 
@@ -22,7 +22,7 @@ export function defineSharedStore(initialState, fn, options) {
 }
 
 export function createSharedStoreMutationObserver(options) {
-    return (sharedState, useSharedState, reactiveState, initialState, storeOptions) => {
+    return (sharedState, reactiveState, initialState, storeOptions) => {
         const type = typeof initialState;
         const { stack: fileStack } = new Error();
         const fileStackLines = fileStack.split('\n');

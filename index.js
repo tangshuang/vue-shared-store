@@ -1,20 +1,13 @@
-import { reactive, computed, ref, watch } from 'vue-demi';
+import { ref, watch } from 'vue-demi';
 
 export function defineSharedStore(initialState, fn, options) {
-    var sharedState, reactiveState;
-    if (initialState && typeof initialState === 'object') {
-        reactiveState = reactive(initialState);
-        sharedState = computed(() => reactiveState);
-    }
-    else {
-        sharedState = reactiveState = ref(initialState);
-    }
+    const sharedState = ref(initialState);
 
     const useSharedState = () => (fn ? fn(sharedState) : sharedState);
 
     if (options?.plugins?.length) {
         options.plugins.forEach((plugin) => {
-            plugin(sharedState, reactiveState, initialState, options);
+            plugin(sharedState, options, initialState);
         });
     }
 
@@ -22,15 +15,17 @@ export function defineSharedStore(initialState, fn, options) {
 }
 
 export function createSharedStoreMutationObserver(options) {
-    return (sharedState, reactiveState, initialState, storeOptions) => {
-        const type = typeof initialState;
+    return (sharedState, storeOptions, initialState) => {
         const { stack: fileStack } = new Error();
         const fileStackLines = fileStack.split('\n');
         const filePathInfo = fileStackLines[5];
         const filePath = filePathInfo.replace(/^.*?at\s/, '');
         const { debug, onChange } = options;
         const { name = filePath } = storeOptions;
-        watch(reactiveState, () => {}, {
+
+        let latestRefValue = initialState;
+
+        watch(sharedState, () => {}, {
             immediate: true,
             flush: 'pre',
             deep: true,
@@ -40,27 +35,31 @@ export function createSharedStoreMutationObserver(options) {
                 const traces = lines.slice(6);
                 const trace = traces.join('\n');
                 const { target, newValue, oldValue } = e;
+                const time = Date.now();
                 if (target.__v_isRef) {
+                    const type = typeof initialState;
                     if (debug) {
-                        console.debug(`%c[vue3x]: shared state '${name}' typeof ${type} changed'`, 'color:#491D90;font-weight:800', 'new value:', newValue, '\nstack:\n', '\n' + trace);
+                        console.debug(`%c[vue]: ${new Date(time)} shared state '${name}' typeof ${type} changed`, 'color:#491D90;font-weight:800', '\nnew value:', newValue, ', old value:', latestRefValue, '\nstack:\n', '\n' + trace);
                     }
                     onChange?.({
-                        time: Date.now(),
+                        time,
                         name,
-                        valueType: type,
+                        oldValue: latestRefValue,
                         newValue,
                         trace,
                         sharedState,
-                    })
+                        typeof: type,
+                    });
+                    latestRefValue = newValue;
                 }
                 else {
                     const path = findKeyPath(target, initialState) || [];
                     const keyPath = [...path, Array.isArray(target) ? +e.key : e.key].map(key => typeof key === 'number' ? `[${key}]` : `.${key}`).join('').replace(/^\./, '');
                     if (debug) {
-                        console.debug(`%c[vue3x]: shared state '${name}' changed at '${keyPath}'`, 'color:#491D90;font-weight:800', 'new value:', newValue, 'old value:', oldValue, 'whole state:', initialState, '\nstack:\n', '\n' + trace);
+                        console.debug(`%c[vue]: ${new Date(time)} shared state '${name}' changed at '${keyPath}'`, 'color:#491D90;font-weight:800', '\nnew value:', newValue, ', old value:', oldValue, ', whole state:', initialState, '.\nstack:\n', '\n' + trace);
                     }
                     onChange?.({
-                        time: Date.now(),
+                        time,
                         name,
                         keyPath,
                         newValue,
@@ -68,7 +67,7 @@ export function createSharedStoreMutationObserver(options) {
                         state: initialState,
                         sharedState,
                         trace,
-                    })
+                    });
                 }
             },
         });

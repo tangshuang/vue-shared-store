@@ -39,7 +39,7 @@ export function createSharedStoreMutationObserver(options) {
                 if (target.__v_isRef) {
                     const type = typeof initialState;
                     if (debug) {
-                        console.debug(`%c[vue]: ${new Date(time)} shared state '${name}' typeof ${type} changed`, 'color:#491D90;font-weight:800', '\nnew value:', newValue, ', old value:', latestRefValue, '\nstack:\n', '\n' + trace);
+                        console.debug(`%c[vue]: ${new Date(time)} shared state '${name}' typeof ${type} changed`, 'color:#de2e29;font-weight:800', '\nnew value:', newValue, ', old value:', latestRefValue, '\nstack:\n', '\n' + trace);
                     }
                     onChange?.({
                         time,
@@ -56,7 +56,7 @@ export function createSharedStoreMutationObserver(options) {
                     const path = findKeyPath(target, initialState) || [];
                     const keyPath = [...path, Array.isArray(target) ? +e.key : e.key].map(key => typeof key === 'number' ? `[${key}]` : `.${key}`).join('').replace(/^\./, '');
                     if (debug) {
-                        console.debug(`%c[vue]: ${new Date(time)} shared state '${name}' changed at '${keyPath}'`, 'color:#491D90;font-weight:800', '\nnew value:', newValue, ', old value:', oldValue, ', whole state:', initialState, '.\nstack:\n', '\n' + trace);
+                        console.debug(`%c[vue]: ${new Date(time)} shared state '${name}' changed at '${keyPath}'`, 'color:#de2e29;font-weight:800', '\nnew value:', newValue, ', old value:', oldValue, ', whole state:', initialState, '.\nstack:\n', '\n' + trace);
                     }
                     onChange?.({
                         time,

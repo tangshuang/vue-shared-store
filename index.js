@@ -1,21 +1,25 @@
 import { ref, watch } from 'vue-demi';
 
-export function defineSharedStore(initialState, fn, options) {
-    const sharedState = ref(initialState);
-
-    const useSharedState = () => (fn ? fn(sharedState) : sharedState);
+export function defineStore(initial, fn, options) {
+    const state = ref(initial);
+    const useState = (arg) => (fn ? fn(state, arg) : state);
 
     if (options?.plugins?.length) {
         options.plugins.forEach((plugin) => {
-            plugin(sharedState, options, initialState);
+            plugin(state, options, initial);
         });
     }
 
-    return useSharedState;
+    return useState;
 }
 
+/**
+ * @deprecated use defineStore instead
+ */
+export const defineSharedStore = defineStore;
+
 export function createSharedStoreMutationObserver(options) {
-    return (sharedState, storeOptions, initialState) => {
+    return (state, storeOptions, initial) => {
         const { stack: fileStack } = new Error();
         const fileStackLines = fileStack.split('\n');
         const filePathInfo = fileStackLines[5];
@@ -23,9 +27,9 @@ export function createSharedStoreMutationObserver(options) {
         const { debug, onChange } = options;
         const { name = filePath } = storeOptions;
 
-        let latestRefValue = initialState;
+        let latestRefValue = initial;
 
-        watch(sharedState, () => {}, {
+        watch(state, () => {}, {
             immediate: true,
             flush: 'pre',
             deep: true,
@@ -36,37 +40,39 @@ export function createSharedStoreMutationObserver(options) {
                 const trace = traces.join('\n');
                 const { target, newValue, oldValue } = e;
                 const time = Date.now();
+                const type = typeof initial;
                 if (target.__v_isRef) {
-                    const type = typeof initialState;
                     if (debug) {
-                        console.debug(`%c[vue]: ${new Date(time)} shared state '${name}' typeof ${type} changed`, 'color:#de2e29;font-weight:800', '\nnew value:', newValue, ', old value:', latestRefValue, '\nstack:\n', '\n' + trace);
+                        console.debug(`%c[vue]: ${new Date(time)} state '${name}' typeof ${type} changed`, 'color:#de2e29;font-weight:800', '\nnew value:', newValue, ', old value:', latestRefValue, '\nstack:\n', '\n' + trace);
                     }
                     onChange?.({
                         time,
                         name,
                         oldValue: latestRefValue,
                         newValue,
+                        initial,
                         trace,
-                        sharedState,
+                        state,
                         typeof: type,
                     });
                     latestRefValue = newValue;
                 }
                 else {
-                    const path = findKeyPath(target, initialState) || [];
+                    const path = findKeyPath(target, initial) || [];
                     const keyPath = [...path, Array.isArray(target) ? +e.key : e.key].map(key => typeof key === 'number' ? `[${key}]` : `.${key}`).join('').replace(/^\./, '');
                     if (debug) {
-                        console.debug(`%c[vue]: ${new Date(time)} shared state '${name}' changed at '${keyPath}'`, 'color:#de2e29;font-weight:800', '\nnew value:', newValue, ', old value:', oldValue, ', whole state:', initialState, '.\nstack:\n', '\n' + trace);
+                        console.debug(`%c[vue]: ${new Date(time)} state '${name}' changed at '${keyPath}'`, 'color:#de2e29;font-weight:800', '\nnew value:', newValue, ', old value:', oldValue, ', whole state:', initial, '.\nstack:\n', '\n' + trace);
                     }
                     onChange?.({
                         time,
                         name,
                         keyPath,
-                        newValue,
                         oldValue,
-                        state: initialState,
-                        sharedState,
+                        newValue,
+                        initial,
+                        state,
                         trace,
+                        typeof: type,
                     });
                 }
             },

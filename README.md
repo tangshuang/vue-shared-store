@@ -13,10 +13,10 @@ npm i vue-shared-store
 ```js
 // a.ts
 
-import { defineSharedStore } from 'vue-shared-store';
+import { defineStore } from 'vue-shared-store';
 import { computed } from 'vue';
 
-export const useMySharedState = defineSharedStore(
+export const useState = defineStore(
     {
         a: 1,
     },
@@ -31,14 +31,14 @@ export const useMySharedState = defineSharedStore(
 ```
 
 In the previous code, we define a shared state which is an object contains a `a` property.
-The `defineSharedStore` function return a composition api function which will be used in different components which use the shared state,
+The `defineStore` function return a composition api function which will be used in different components which use the shared state,
 and when the shared state is modified in one component, the other components which use this shared state will react the mutation.
 
 ```js
 // b.vue
 <script setup>
-import { useMySharedState } from './a';
-const { b } = useMySharedState();
+import { useState } from './a';
+const { b } = useState();
 </script>
 
 <template>
@@ -51,8 +51,8 @@ In this component, we use the exposed composition api function to use value `b`.
 ```js
 // c.vue
 <script setup>
-import { useMySharedState } from './a';
-const { inc } = useMySharedState();
+import { useState } from './a';
+const { inc } = useState();
 </script>
 
 <template>
@@ -65,11 +65,11 @@ In this component, we invoke the the `inc` function to modify the shared state, 
 ## API
 
 ```
-defineSharedStore(initialState, defineFunc?, options?)
+defineStore(initial, define?, options?)
 ```
 
-- initialState: shared initial state
-- defineFunc: define the composition api function, recieve shared state wrapped by a ref, if not pass, the composition api function return the shared state directly
+- initial: shared initial state
+- define: define the composition api function, recieve shared state wrapped by a ref, if not pass, the composition api function return the shared state directly
 - options
     - name: to indentify current observer's name
     - plugins: array
@@ -79,7 +79,7 @@ defineSharedStore(initialState, defineFunc?, options?)
 A plugin is a function which using composition api.
 
 ```
-Plugin: (sharedState, useSharedState, reactiveState, initialState, storeOptions) => void
+Plugin: (state, options, initial) => void
 ```
 
 ```
@@ -90,12 +90,12 @@ Create a shared store mutation observer plugin. Can only be used in debug mode t
 
 
 - debug: boolean, true to console the debugger message
-- onChange: ({ time, name, valueType?, oldValue?, newValue, keyPath?, state?, sharedState, trace }) => void
+- onChange: ({ time, name, oldValue, newValue, keyPath?, state, initial, trace, typeof }) => void
 
 Example:
 
 ```js
-const useMySharedState = defineSharedStore(
+const useState = defineStore(
     { a: { b: [1, 2, 3] } },
     (state) => {
         const b = computed(() => state.value.a.b[2] + 1);

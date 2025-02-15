@@ -22,13 +22,13 @@ export function defineStore(data, setup, options) {
     const state = r(data);
     const scope = effectScope();
     const useStore = (...args) => {
-        let sharedState = state;
+        let store = state;
         if (setup) {
             scope.run(() => {
-                sharedState = setup(state, ...args);
+                store = setup(state, ...args);
             });
         }
-        return sharedState;
+        return store;
     };
 
     if (options?.plugins?.length) {

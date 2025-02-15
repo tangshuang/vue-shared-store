@@ -2,24 +2,24 @@ import type { Ref } from 'vue';
 
 export type StoreOptions<S> = {
     name?: string;
-    plugins?: Array<(sharedState: Ref<S>, storeOptions: StoreOptions, data: S) => void>;
+    plugins?: Array<(state: Ref<S>, storeOptions: StoreOptions, data: S) => void>;
     shallow?: boolean;
 };
 
-export declare function defineStore<S = any, T = any>(
+export declare function defineStore<S = any, T = any, P = any[]>(
     data: S,
-    fn?: (stateRef: Ref<S>) => T,
+    setup?: (state: Ref<S>, ...args: P) => T,
     options?: StoreOptions<S>,
-): T;
+): (...args: P) => T;
 
 /**
  * @deprecated use defineStore instead
  */
-export declare function defineSharedStore<S = any, T = any>(
+export declare function defineSharedStore<S = any, T = any, P = any[]>(
     data: S,
-    fn?: (stateRef: Ref<S>) => T,
+    setup?: (state: Ref<S>, ...args: P) => T,
     options?: StoreOptions<S>,
-): T;
+): (...args: P) => T;
 
 export declare function createSharedStoreMutationObserver<S = any>(options: {
     debug?: boolean;
@@ -35,7 +35,7 @@ export declare function createSharedStoreMutationObserver<S = any>(options: {
         trace: string,
         typeof: string,
     }) => void;
-}): (sharedState: Ref<S>, storeOptions: StoreOptions, data: S) => void;
+}): (state: Ref<S>, storeOptions: StoreOptions, data: S) => void;
 
 /**
  * onMounted first time, only run once

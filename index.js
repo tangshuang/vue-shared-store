@@ -2,17 +2,16 @@ import { ref, shallowRef, watch, effectScope, onMounted, getCurrentScope } from 
 
 export function onMountedOnce(mountedFn) {
     const scope = getCurrentScope();
-    if (!scope) {
-        console.warn(`onMountedOnce can only be called in defineStore setup`);
-        onMounted(mountedFn);
-        return;
-    }
     onMounted(() => {
-        if (scope.__mounted?.includes(mountedFn)) {
+        if (!scope) {
+            console.warn(`onMountedOnce can only be called in defineStore setup`);
+        }
+        else if (scope.__mounted) {
             return;
         }
-        scope.__mounted = scope.__mounted || [];
-        scope.__mounted.push(mountedFn);
+        else {
+            scope.__mounted = true;
+        }
         return mountedFn();
     });
 }

@@ -1,16 +1,43 @@
-import { ref, watch } from 'vue-demi';
+import { ref, shallowRef, watch, effectScope, onMounted, getCurrentScope } from 'vue-demi';
 
-export function defineStore(initial, fn, options) {
-    const state = ref(initial);
-    const useState = (arg) => (fn ? fn(state, arg) : state);
+export function onMountedOnce(mountedFn) {
+    const scope = getCurrentScope();
+    if (!scope) {
+        console.warn(`onMountedOnce can only be called in defineStore setup`);
+        onMounted(mountedFn);
+        return;
+    }
+    onMounted(() => {
+        if (scope.__mounted?.includes(mountedFn)) {
+            return;
+        }
+        scope.__mounted = scope.__mounted || [];
+        scope.__mounted.push(mountedFn);
+        return mountedFn();
+    });
+}
+
+export function defineStore(data, setup, options) {
+    const r = options?.shallow ? shallowRef : ref;
+    const state = r(data);
+    const scope = effectScope();
+    const useStore = (...args) => {
+        let sharedState = state;
+        if (setup) {
+            scope.run(() => {
+                sharedState = setup(state, ...args);
+            });
+        }
+        return sharedState;
+    };
 
     if (options?.plugins?.length) {
         options.plugins.forEach((plugin) => {
-            plugin(state, options, initial);
+            plugin(state, options, data);
         });
     }
 
-    return useState;
+    return useStore;
 }
 
 /**
@@ -19,7 +46,7 @@ export function defineStore(initial, fn, options) {
 export const defineSharedStore = defineStore;
 
 export function createSharedStoreMutationObserver(options) {
-    return (state, storeOptions, initial) => {
+    return (state, storeOptions, data) => {
         const { stack: fileStack } = new Error();
         const fileStackLines = fileStack.split('\n');
         const filePathInfo = fileStackLines[5];
@@ -27,7 +54,7 @@ export function createSharedStoreMutationObserver(options) {
         const { debug, onChange } = options;
         const { name = filePath } = storeOptions;
 
-        let latestRefValue = initial;
+        let latestRefValue = data;
 
         watch(state, () => {}, {
             immediate: true,
@@ -40,7 +67,7 @@ export function createSharedStoreMutationObserver(options) {
                 const trace = traces.join('\n');
                 const { target, newValue, oldValue } = e;
                 const time = Date.now();
-                const type = typeof initial;
+                const type = typeof data;
                 if (target.__v_isRef) {
                     if (debug) {
                         console.debug(`%c[vue]: ${new Date(time)} state '${name}' typeof ${type} changed`, 'color:#de2e29;font-weight:800', '\nnew value:', newValue, ', old value:', latestRefValue, '\nstack:\n', '\n' + trace);
@@ -50,7 +77,7 @@ export function createSharedStoreMutationObserver(options) {
                         name,
                         oldValue: latestRefValue,
                         newValue,
-                        initial,
+                        data,
                         trace,
                         state,
                         typeof: type,
@@ -58,10 +85,10 @@ export function createSharedStoreMutationObserver(options) {
                     latestRefValue = newValue;
                 }
                 else {
-                    const path = findKeyPath(target, initial) || [];
+                    const path = findKeyPath(target, data) || [];
                     const keyPath = [...path, Array.isArray(target) ? +e.key : e.key].map(key => typeof key === 'number' ? `[${key}]` : `.${key}`).join('').replace(/^\./, '');
                     if (debug) {
-                        console.debug(`%c[vue]: ${new Date(time)} state '${name}' changed at '${keyPath}'`, 'color:#de2e29;font-weight:800', '\nnew value:', newValue, ', old value:', oldValue, ', whole state:', initial, '.\nstack:\n', '\n' + trace);
+                        console.debug(`%c[vue]: ${new Date(time)} state '${name}' changed at '${keyPath}'`, 'color:#de2e29;font-weight:800', '\nnew value:', newValue, ', old value:', oldValue, ', whole state:', data, '.\nstack:\n', '\n' + trace);
                     }
                     onChange?.({
                         time,
@@ -69,7 +96,7 @@ export function createSharedStoreMutationObserver(options) {
                         keyPath,
                         oldValue,
                         newValue,
-                        initial,
+                        data,
                         state,
                         trace,
                         typeof: type,

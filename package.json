@@ -1,6 +1,6 @@
 {
   "name": "vue-shared-store",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "The most easy way to define a shared store composition api for vue.",
   "main": "index.js",
   "type": "module",
